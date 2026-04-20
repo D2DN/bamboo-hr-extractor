@@ -2,12 +2,22 @@
 
 Extract candidate data from BambooHR ATS via API.
 
+## Prérequis
+
+**Python 3.8+** est requis. Vérifiez votre version :
+
+```bash
+python3 --version
+```
+
+Si Python 3 n'est pas installé : `brew install python3` (macOS) ou [python.org/downloads](https://www.python.org/downloads/).
+
 ## Setup
 
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 ```
 
 Copy the example env file and fill in your credentials:
