@@ -1,4 +1,6 @@
+import csv
 import re
+from datetime import datetime
 from pathlib import Path
 
 import click
@@ -56,10 +58,14 @@ def download_resumes(
 ) -> tuple[dict[str, int], dict[str | int, dict]]:
     """Download CVs and return (stats, file_map).
 
-    file_map: { application_id -> {"resume_path": "...", "cover_letter_path": "..."} }
+    file_map: { application_id -> {"resume_path": "..."} }
+    Errors are written to download_errors.csv in resumes_dir.
     """
     output_dir = Path(resumes_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    error_log_path = output_dir / "download_errors.csv"
+    error_rows: list[dict] = []
 
     stats = {"downloaded": 0, "skipped": 0, "errors": 0}
     file_map: dict[str | int, dict] = {}
@@ -72,40 +78,49 @@ def download_resumes(
         try:
             details = client.get_application_details(app_id)
         except Exception as e:
-            click.echo(f"  [WARN] Could not fetch details for application {app_id}: {e}")
+            msg = f"Could not fetch details: {e}"
+            click.echo(f"  [WARN] application {app_id}: {msg}")
             stats["errors"] += 1
+            error_rows.append({"application_id": app_id, "first_name": "", "last_name": "", "file_type": "", "error": msg})
             continue
 
         file_map.setdefault(app_id, {})
 
-        files_to_download = []
-
         resume_file_id = details.get("resumeFileId") or app.get("resumeFileId")
-        if resume_file_id:
-            files_to_download.append(("resume", resume_file_id))
+        if not resume_file_id:
+            continue
 
-        for file_type, file_id in files_to_download:
-            path_key = f"{file_type}_path"
+        existing = list(output_dir.glob(f"*_{app_id}_resume.*"))
+        if existing:
+            click.echo(f"  [SKIP] {existing[0].name} already exists")
+            stats["skipped"] += 1
+            file_map[app_id]["resume_path"] = str(existing[0])
+            continue
 
-            existing = list(output_dir.glob(f"*_{app_id}_{file_type}.*"))
-            if existing:
-                click.echo(f"  [SKIP] {existing[0].name} already exists")
-                stats["skipped"] += 1
-                file_map[app_id][path_key] = str(existing[0])
-                continue
+        try:
+            content, headers = client.download_file(app_id, resume_file_id)
+            ext = _ext_from_headers(headers)
+            filename = _build_filename(app, details, "resume", ext)
+            dest = output_dir / filename
+            dest.write_bytes(content)
+            click.echo(f"  [OK]   {filename}")
+            stats["downloaded"] += 1
+            file_map[app_id]["resume_path"] = str(dest)
+        except Exception as e:
+            msg = str(e)
+            click.echo(f"  [ERR]  application {app_id} resume: {msg}")
+            first, last = _get_names(app, details)
+            stats["errors"] += 1
+            error_rows.append({"application_id": app_id, "first_name": first, "last_name": last, "file_type": "resume", "error": msg})
 
-            try:
-                content, headers = client.download_file(app_id, file_id)
-                ext = _ext_from_headers(headers)
-                filename = _build_filename(app, details, file_type, ext)
-                dest = output_dir / filename
-                dest.write_bytes(content)
-                click.echo(f"  [OK]   {filename}")
-                stats["downloaded"] += 1
-                file_map[app_id][path_key] = str(dest)
-            except Exception as e:
-                click.echo(f"  [ERR]  application {app_id} {file_type}: {e}")
-                stats["errors"] += 1
+    if error_rows:
+        with error_log_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=["application_id", "last_name", "first_name", "file_type", "error", "timestamp"])
+            writer.writeheader()
+            ts = datetime.now().isoformat(timespec="seconds")
+            for row in error_rows:
+                writer.writerow({**row, "timestamp": ts})
+        click.echo(f"  Error log written → {error_log_path}")
 
     return stats, file_map
 

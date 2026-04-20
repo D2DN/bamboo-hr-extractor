@@ -19,6 +19,7 @@ resumes/
 candidates_export.csv
 candidates_export.json
 *.csv
+download_errors.csv
 
 # macOS
 .DS_Store
