@@ -16,8 +16,7 @@ env/
 
 # Output files
 resumes/
-candidates_export.csv
-candidates_export.json
+candidates_export**
 *.csv
 download_errors.csv
 
