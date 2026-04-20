@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:documentation.bamboohr.com)",
+      "Bash(pip install *)",
+      "Bash(python main.py --help)",
+      "Bash(python main.py extract --help)",
+      "Bash(pip3 install *)",
+      "Bash(python3 main.py --help)",
+      "Bash(python3 main.py extract --help)",
+      "WebSearch",
+      "WebFetch(domain:www.getknit.dev)",
+      "WebFetch(domain:github.com)",
+      "Bash(curl -s https://raw.githubusercontent.com/cloudops/bamboo/master/bamboo.go)",
+      "WebFetch(domain:rollout.com)"
+    ]
+  }
+}
