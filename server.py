@@ -10,6 +10,17 @@ from flask import Flask, Response, render_template, request, stream_with_context
 
 app = Flask(__name__)
 
+_current_proc: subprocess.Popen | None = None
+
+
+@app.route("/api/stop", methods=["POST"])
+def api_stop():
+    global _current_proc
+    if _current_proc and _current_proc.poll() is None:
+        _current_proc.terminate()
+        return {"status": "stopped"}
+    return {"status": "no_process"}
+
 
 @app.route("/")
 def index():
@@ -67,9 +78,11 @@ def api_extract():
     add_flag("--demo", data.get("demo"))
 
     def generate():
+        global _current_proc
         q: queue.Queue[str | None] = queue.Queue()
 
         def run():
+            global _current_proc
             try:
                 proc = subprocess.Popen(
                     cmd,
@@ -78,6 +91,7 @@ def api_extract():
                     text=True,
                     bufsize=1,
                 )
+                _current_proc = proc
                 for line in proc.stdout:
                     q.put(line)
                 proc.wait()
@@ -85,6 +99,7 @@ def api_extract():
             except Exception as e:
                 q.put(f"[ERROR] {e}\n")
             finally:
+                _current_proc = None
                 q.put(None)
 
         threading.Thread(target=run, daemon=True).start()

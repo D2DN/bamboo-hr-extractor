@@ -198,6 +198,25 @@
     .btn-run:active { transform: scale(.99); }
     .btn-run:disabled { background: #9ca3af; cursor: not-allowed; }
 
+    .btn-stop {
+      width: 100%;
+      padding: 14px;
+      background: #ef4444;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: .2px;
+      display: none;
+      margin-top: 12px;
+    }
+    .btn-stop:hover { background: #dc2626; }
+    .btn-stop:active { transform: scale(.99); }
+    .btn-stop.visible { display: block; }
+
     /* ── Terminal output ── */
     .terminal {
       background: #0f1117;
@@ -356,6 +375,10 @@
 
   </form>
 
+  <button class="btn-stop" id="btn_stop">
+    ■ Stopper l'extraction
+  </button>
+
   <!-- Terminal -->
   <div class="terminal" id="terminal">
     <div class="terminal-bar">
@@ -405,6 +428,14 @@
     }
   });
 
+  // ── Stop ───────────────────────────────────────────────────
+  let _abortController = null;
+
+  $("btn_stop").addEventListener("click", async () => {
+    if (_abortController) _abortController.abort();
+    try { await fetch("/api/stop", { method: "POST" }); } catch {}
+  });
+
   // ── Extract ────────────────────────────────────────────────
   $("form").addEventListener("submit", async e => {
     e.preventDefault();
@@ -433,6 +464,7 @@
     out.innerHTML  = "";
     $("btn_run").disabled = true;
     $("btn_run").textContent = "⏳ Extraction en cours…";
+    $("btn_stop").classList.add("visible");
 
     // Cursor
     const cursor = document.createElement("span");
@@ -452,10 +484,12 @@
     }
 
     try {
+      _abortController = new AbortController();
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
+        signal: _abortController.signal,
       });
 
       const reader = res.body.getReader();
@@ -477,11 +511,13 @@
         }
       }
     } catch (err) {
-      append(`\n[ERROR] ${err.message}\n`);
+      if (err.name !== "AbortError") append(`\n[ERROR] ${err.message}\n`);
     } finally {
+      _abortController = null;
       cursor.remove();
       $("btn_run").disabled = false;
       $("btn_run").textContent = "▶ Lancer l'extraction";
+      $("btn_stop").classList.remove("visible");
     }
   });
 </script>
