@@ -505,12 +505,17 @@
     $("btn_stop").classList.add("visible");
     $("btn_download").classList.remove("visible");
 
+    let exportedFile = null;
+
     // Cursor
     const cursor = document.createElement("span");
     cursor.className = "cursor";
     out.appendChild(cursor);
 
     function append(text) {
+      const exportMatch = text.match(/Exported to (.+)/);
+      if (exportMatch) exportedFile = exportMatch[1].trim();
+
       const colored = text
         .replace(/\[OK\]/g,   '<span class="ok">[OK]</span>')
         .replace(/\[ERR\]/g,  '<span class="err">[ERR]</span>')
@@ -558,11 +563,12 @@
       $("btn_run").textContent = "▶ Lancer l'extraction";
       $("btn_stop").classList.remove("visible");
 
-      const dlBtn = $("btn_download");
-      const params = new URLSearchParams({ file: body.output_file, format: body.output_format });
-      dlBtn.href = `/api/download?${params}`;
-      dlBtn.textContent = `⬇ Télécharger ${body.output_file}.${body.output_format}`;
-      dlBtn.classList.add("visible");
+      if (exportedFile) {
+        const dlBtn = $("btn_download");
+        dlBtn.href = `/api/download?filename=${encodeURIComponent(exportedFile)}`;
+        dlBtn.textContent = `⬇ Télécharger ${exportedFile}`;
+        dlBtn.classList.add("visible");
+      }
     }
   });
 </script>

@@ -90,6 +90,11 @@ def extract(api_key, domain, status, job_id, new_since, output_format, output_fi
     else:
         click.echo("Skipping enrichment (simple mode).")
 
+    from datetime import datetime
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = "_enriched" if enrich else ""
+    output_file = f"{output_file}_{ts}{suffix}"
+
     # Export d'abord sans les chemins de CV
     path = export(applications, output_format.lower(), output_file)
     click.echo(f"Exported to {path}")

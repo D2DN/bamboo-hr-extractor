@@ -26,16 +26,13 @@ def api_stop():
 
 @app.route("/api/download")
 def api_download():
-    output_file = request.args.get("file", "candidates_export")
-    output_format = request.args.get("format", "csv")
-    ext = "csv" if output_format == "csv" else "json"
-    filename = f"{output_file}.{ext}"
-    if not os.path.isfile(filename):
+    filename = request.args.get("filename", "")
+    if not filename or not os.path.isfile(filename):
         return {"error": f"File not found: {filename}"}, 404
     return send_file(
         os.path.abspath(filename),
         as_attachment=True,
-        download_name=filename,
+        download_name=os.path.basename(filename),
     )
 
 
