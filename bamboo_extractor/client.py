@@ -70,6 +70,18 @@ class BambooHRClient:
     def get_application_details(self, application_id: int | str) -> dict:
         return self._get(f"/applicant_tracking/applications/{application_id}")
 
+    def enrich_with_details(self, applications: list[dict]) -> list[dict]:
+        """Merge full application details into each application dict."""
+        enriched = []
+        for app in applications:
+            app_id = app.get("id")
+            try:
+                details = self.get_application_details(app_id)
+                enriched.append({**app, **details})
+            except Exception:
+                enriched.append(app)
+        return enriched
+
     def download_file(self, application_id: int | str, file_id: int | str) -> tuple[bytes, dict]:
         """Download a file by application ID and file ID. Returns (content, headers)."""
         url = f"{self.config.base_url}/applicant_tracking/applications/{application_id}/files/{file_id}"

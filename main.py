@@ -74,6 +74,18 @@ def extract(api_key, domain, status, job_id, new_since, output_format, output_fi
     else:
         click.echo(f"Retrieved {len(applications)} application(s).")
 
+    click.echo("Fetching full details for each candidate...")
+    with click.progressbar(applications, label="Enriching", show_pos=True) as bar:
+        enriched_applications = []
+        for app in bar:
+            app_id = app.get("id")
+            try:
+                details = client.get_application_details(app_id)
+                enriched_applications.append({**app, **details})
+            except Exception:
+                enriched_applications.append(app)
+    applications = enriched_applications
+
     # Export d'abord sans les chemins de CV
     path = export(applications, output_format.lower(), output_file)
     click.echo(f"Exported to {path}")

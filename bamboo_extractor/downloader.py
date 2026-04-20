@@ -75,14 +75,8 @@ def download_resumes(
         if not app_id:
             continue
 
-        try:
-            details = client.get_application_details(app_id)
-        except Exception as e:
-            msg = f"Could not fetch details: {e}"
-            click.echo(f"  [WARN] application {app_id}: {msg}")
-            stats["errors"] += 1
-            error_rows.append({"application_id": app_id, "first_name": "", "last_name": "", "file_type": "", "error": msg})
-            continue
+        # Applications are already enriched with details — no extra API call needed.
+        details = app
 
         file_map.setdefault(app_id, {})
 
