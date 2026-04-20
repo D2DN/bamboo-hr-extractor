@@ -388,6 +388,18 @@
         </div>
       </div>
 
+      <!-- Emails toggle -->
+      <div class="toggle-row">
+        <label class="switch">
+          <input type="checkbox" id="fetch_emails" name="fetch_emails" checked />
+          <span class="slider"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Récupérer les emails <span style="font-size:.74rem;color:var(--green);font-weight:600;">recommandé</span></div>
+          <div class="toggle-desc">Récupérer les emails envoyés aux candidats</div>
+        </div>
+      </div>
+
       <!-- Demo toggle -->
       <div class="toggle-row">
         <label class="switch">
@@ -488,6 +500,7 @@
       resumes_dir:   $("resumes_dir").value.trim() || null,
       demo:          $("demo").checked,
       enrich:        $("enrich").checked,
+      fetch_emails:  $("fetch_emails").checked,
     };
 
     if (!body.api_key || !body.domain) {

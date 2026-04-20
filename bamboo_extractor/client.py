@@ -79,6 +79,33 @@ class BambooHRClient:
         except Exception:
             return []
 
+    def get_application_emails(self, application_id: int | str) -> list[dict]:
+        """Fetch emails sent to an applicant with full message body."""
+        try:
+            result = self._get(f"/applicant_tracking/applications/{application_id}/emails")
+            emails = result if isinstance(result, list) else result.get("emails", [])
+            # The list endpoint truncates `message` — fetch each email individually for full body
+            full_emails = []
+            for email in emails:
+                email_id = email.get("id")
+                try:
+                    full = self._get(f"/applicant_tracking/applications/{application_id}/emails/{email_id}")
+                    full_emails.append(full)
+                except Exception:
+                    full_emails.append(email)
+            return full_emails
+        except Exception:
+            return []
+
+    def probe_application_emails(self, application_id: int | str) -> tuple[int, any]:
+        """Probe the emails endpoint and return (status_code, raw_body) for debugging."""
+        url = f"{self.config.base_url}/applicant_tracking/applications/{application_id}/emails"
+        response = self.session.get(url)
+        try:
+            return response.status_code, response.json()
+        except Exception:
+            return response.status_code, response.text
+
     def enrich_with_details(self, applications: list[dict]) -> list[dict]:
         """Merge full application details into each application dict."""
         enriched = []

@@ -92,6 +92,8 @@ def api_extract():
     add_flag("--demo", data.get("demo"))
     if data.get("enrich") is False:
         cmd.append("--no-enrich")
+    if data.get("fetch_emails"):
+        cmd.append("--fetch-emails")
 
     def generate():
         global _current_proc
