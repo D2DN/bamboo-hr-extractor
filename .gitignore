@@ -24,6 +24,10 @@ download_errors.csv
 # macOS
 .DS_Store
 
+# Flask
+__pycache__/
+*.pyc
+
 # IDE
 .vscode/
 .idea/

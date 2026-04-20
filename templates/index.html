@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BambooHR Extractor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green: #73c41d;
+      --green-dark: #5a9a16;
+      --bg: #f7f8fa;
+      --surface: #ffffff;
+      --border: #e2e6ea;
+      --text: #1a1d23;
+      --muted: #6b7280;
+      --radius: 10px;
+      --shadow: 0 2px 12px rgba(0,0,0,.07);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #1a1d23 0%, #2d3748 100%);
+      color: #fff;
+      padding: 56px 24px 48px;
+      text-align: center;
+    }
+    .hero-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .hero-logo svg { width: 40px; height: 40px; }
+    .hero h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.5px; }
+    .hero p {
+      margin-top: 10px;
+      color: #a0aec0;
+      font-size: 1rem;
+      max-width: 520px;
+      margin-inline: auto;
+    }
+    .badge {
+      display: inline-block;
+      margin-top: 18px;
+      background: rgba(115,196,29,.15);
+      color: var(--green);
+      border: 1px solid rgba(115,196,29,.3);
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Form grid ── */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid.full { grid-template-columns: 1fr; }
+    @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field.span2 { grid-column: span 2; }
+    @media (max-width: 600px) { .field.span2 { grid-column: span 1; } }
+
+    label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: #374151;
+    }
+    label .hint {
+      font-weight: 400;
+      color: var(--muted);
+      font-size: .75rem;
+      margin-left: 6px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="datetime-local"],
+    select {
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 12px;
+      font-size: .9rem;
+      color: var(--text);
+      background: #fff;
+      width: 100%;
+      transition: border-color .15s, box-shadow .15s;
+      appearance: none;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(115,196,29,.15);
+    }
+    select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+    /* ── Jobs row ── */
+    .jobs-row { display: flex; gap: 10px; align-items: flex-end; }
+    .jobs-row select { flex: 1; }
+    .btn-sm {
+      white-space: nowrap;
+      padding: 9px 14px;
+      font-size: .82rem;
+      font-weight: 600;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-sm:hover { background: #e5e7eb; }
+    .btn-sm:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Toggle / Switch ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+    }
+    .switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #d1d5db;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .slider::before {
+      content: "";
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 3px; top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform .2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .switch input:checked + .slider { background: var(--green); }
+    .switch input:checked + .slider::before { transform: translateX(18px); }
+    .toggle-label { font-size: .88rem; font-weight: 500; }
+    .toggle-desc { font-size: .78rem; color: var(--muted); }
+
+    /* ── Submit ── */
+    .btn-run {
+      width: 100%;
+      padding: 14px;
+      background: var(--green);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: .2px;
+    }
+    .btn-run:hover { background: var(--green-dark); }
+    .btn-run:active { transform: scale(.99); }
+    .btn-run:disabled { background: #9ca3af; cursor: not-allowed; }
+
+    /* ── Terminal output ── */
+    .terminal {
+      background: #0f1117;
+      border-radius: var(--radius);
+      border: 1px solid #2d3748;
+      overflow: hidden;
+      display: none;
+      margin-top: 24px;
+    }
+    .terminal.visible { display: block; }
+    .terminal-bar {
+      background: #1a1d23;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-r { background: #ff5f57; }
+    .dot-y { background: #febc2e; }
+    .dot-g { background: #28c840; }
+    .terminal-title { margin-left: 8px; font-size: .78rem; color: #6b7280; font-family: monospace; }
+    .terminal-body {
+      padding: 20px;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+      font-size: .82rem;
+      line-height: 1.7;
+      color: #e2e8f0;
+      max-height: 480px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal-body .ok   { color: #73c41d; }
+    .terminal-body .err  { color: #f87171; }
+    .terminal-body .warn { color: #fbbf24; }
+    .terminal-body .skip { color: #60a5fa; }
+    .terminal-body .info { color: #a0aec0; }
+    .cursor { display: inline-block; width: 8px; height: 14px; background: #73c41d; animation: blink 1s step-end infinite; vertical-align: middle; }
+    @keyframes blink { 50% { opacity: 0; } }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-logo">
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="40" height="40" rx="10" fill="#73c41d"/>
+      <path d="M12 28V14l8-4 8 4v14l-8 4-8-4z" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M20 10v18M12 14l8 4 8-4" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/>
+    </svg>
+    <span style="font-size:1.4rem;font-weight:800;letter-spacing:-.5px;">BambooHR Extractor</span>
+  </div>
+  <h1>Export your ATS candidates in seconds</h1>
+  <p>Extract candidate data, filter by job, status or date, and download CVs — all from one interface.</p>
+  <span class="badge">v1.0 · BambooHR ATS API</span>
+</div>
+
+<div class="container">
+
+  <form id="form">
+
+    <!-- Credentials -->
+    <div class="card">
+      <div class="card-title">Credentials</div>
+      <div class="grid">
+        <div class="field">
+          <label>API Key <span class="hint">BambooHR → API Keys</span></label>
+          <input type="password" id="api_key" name="api_key" placeholder="••••••••••••••••" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label>Company domain <span class="hint">e.g. cerbexa</span></label>
+          <input type="text" id="domain" name="domain" placeholder="mycompany" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card">
+      <div class="card-title">Filters</div>
+      <div class="grid">
+
+        <div class="field">
+          <label>Application status</label>
+          <select id="status" name="status">
+            <option value="ALL" selected>ALL — tous</option>
+            <option value="ALL_ACTIVE">ALL_ACTIVE — actifs uniquement</option>
+            <option value="NEW">NEW — nouvelles candidatures</option>
+            <option value="ACTIVE">ACTIVE — en cours</option>
+            <option value="INACTIVE">INACTIVE — inactives</option>
+            <option value="HIRED">HIRED — embauchés</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Filtrer depuis <span class="hint">optionnel</span></label>
+          <input type="datetime-local" id="new_since" name="new_since" />
+        </div>
+
+        <div class="field span2">
+          <label>Intitulé de poste <span class="hint">correspondance partielle, insensible à la casse</span></label>
+          <div class="jobs-row">
+            <select id="job_title_select" name="job_title">
+              <option value="">— tous les postes —</option>
+            </select>
+            <button type="button" class="btn-sm" id="btn_load_jobs">⟳ Charger les postes</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="card">
+      <div class="card-title">Output</div>
+      <div class="grid">
+
+        <div class="field">
+          <label>Format</label>
+          <select id="output_format" name="output_format">
+            <option value="csv" selected>CSV</option>
+            <option value="json">JSON</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Nom du fichier <span class="hint">sans extension</span></label>
+          <input type="text" id="output_file" name="output_file" value="candidates_export" />
+        </div>
+
+        <div class="field span2">
+          <label>Dossier CVs <span class="hint">optionnel — laisser vide pour ne pas télécharger</span></label>
+          <input type="text" id="resumes_dir" name="resumes_dir" placeholder="./resumes" />
+        </div>
+
+      </div>
+
+      <!-- Demo toggle -->
+      <div class="toggle-row" style="margin-top:8px;">
+        <label class="switch">
+          <input type="checkbox" id="demo" name="demo" />
+          <span class="slider"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Mode démo</div>
+          <div class="toggle-desc">Limite l'export aux 10 premiers candidats</div>
+        </div>
+      </div>
+
+    </div>
+
+    <button type="submit" class="btn-run" id="btn_run">
+      ▶ Lancer l'extraction
+    </button>
+
+  </form>
+
+  <!-- Terminal -->
+  <div class="terminal" id="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+      <span class="terminal-title">python3 main.py extract …</span>
+    </div>
+    <div class="terminal-body" id="terminal_body"></div>
+  </div>
+
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  // ── Load jobs ──────────────────────────────────────────────
+  $("btn_load_jobs").addEventListener("click", async () => {
+    const api_key = $("api_key").value.trim();
+    const domain  = $("domain").value.trim();
+    if (!api_key || !domain) {
+      alert("Renseigne d'abord l'API key et le domaine.");
+      return;
+    }
+    const btn = $("btn_load_jobs");
+    btn.disabled = true;
+    btn.textContent = "Chargement…";
+
+    try {
+      const res  = await fetch(`/api/jobs?api_key=${encodeURIComponent(api_key)}&domain=${encodeURIComponent(domain)}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      const sel = $("job_title_select");
+      // keep first "tous les postes" option
+      while (sel.options.length > 1) sel.remove(1);
+      for (const j of data.jobs) {
+        const opt = new Option(j.label, j.label);
+        sel.add(opt);
+      }
+      btn.textContent = `✓ ${data.jobs.length} postes`;
+    } catch (e) {
+      alert("Erreur : " + e.message);
+      btn.textContent = "⟳ Charger les postes";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Extract ────────────────────────────────────────────────
+  $("form").addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const body = {
+      api_key:       $("api_key").value.trim(),
+      domain:        $("domain").value.trim(),
+      status:        $("status").value,
+      job_title:     $("job_title_select").value || null,
+      new_since:     $("new_since").value ? $("new_since").value.replace("T", " ") + ":00" : null,
+      output_format: $("output_format").value,
+      output_file:   $("output_file").value.trim() || "candidates_export",
+      resumes_dir:   $("resumes_dir").value.trim() || null,
+      demo:          $("demo").checked,
+    };
+
+    if (!body.api_key || !body.domain) {
+      alert("API key et domaine sont requis.");
+      return;
+    }
+
+    // Show terminal
+    const terminal = $("terminal");
+    const out      = $("terminal_body");
+    terminal.classList.add("visible");
+    out.innerHTML  = "";
+    $("btn_run").disabled = true;
+    $("btn_run").textContent = "⏳ Extraction en cours…";
+
+    // Cursor
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+    out.appendChild(cursor);
+
+    function append(text) {
+      const colored = text
+        .replace(/\[OK\]/g,   '<span class="ok">[OK]</span>')
+        .replace(/\[ERR\]/g,  '<span class="err">[ERR]</span>')
+        .replace(/\[WARN\]/g, '<span class="warn">[WARN]</span>')
+        .replace(/\[SKIP\]/g, '<span class="skip">[SKIP]</span>')
+        .replace(/^(Fetching|Matched|Retrieved|Exported|Demo|Downloading|Done|Error log).*/gm,
+                 m => `<span class="info">${m}</span>`);
+      cursor.insertAdjacentHTML("beforebegin", colored);
+      out.scrollTop = out.scrollHeight;
+    }
+
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const reader = res.body.getReader();
+      const dec    = new TextDecoder();
+      let buf      = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const parts = buf.split("\n\n");
+        buf = parts.pop();
+        for (const part of parts) {
+          if (part.startsWith("data: ")) {
+            try {
+              append(JSON.parse(part.slice(6)));
+            } catch {}
+          }
+        }
+      }
+    } catch (err) {
+      append(`\n[ERROR] ${err.message}\n`);
+    } finally {
+      cursor.remove();
+      $("btn_run").disabled = false;
+      $("btn_run").textContent = "▶ Lancer l'extraction";
+    }
+  });
+</script>
+
+</body>
+</html>
