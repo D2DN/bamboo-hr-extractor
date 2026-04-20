@@ -52,6 +52,14 @@ python3 main.py list-jobs
 python3 main.py list-jobs
 ```
 
+## Web UI
+
+```bash
+python3 server.py
+```
+
+Then open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
+
 ## API Key
 
 Generate your API key in BambooHR: click your name (bottom-left) -> **API Keys**.
