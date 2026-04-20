@@ -4,10 +4,16 @@ Extract candidate data from BambooHR ATS via API.
 
 ## Setup
 
+Install dependencies:
+
 ```bash
 pip install -r requirements.txt
+```
+
+Copy the example env file and fill in your credentials:
+
+```bash
 cp .env.example .env
-# Edit .env with your credentials
 ```
 
 ## Configuration
@@ -29,30 +35,45 @@ All parameters can be set via `.env` file **or** CLI flags:
 
 ## Usage
 
+Extract all candidates (uses `.env` config):
+
 ```bash
-# Extract all candidates (uses .env config)
 python3 main.py extract
+```
 
-# Demo mode: limit to 10 candidates (no credentials needed to test output)
+Demo mode — limit to 10 candidates:
+
+```bash
 python3 main.py extract --demo
+```
 
-# Override options via CLI
+Override options via CLI:
+
+```bash
 python3 main.py extract --status ACTIVE --format json
+```
 
-# Download CVs into a local folder
+Download CVs into a local folder:
+
+```bash
 python3 main.py extract --resumes-dir ./resumes
+```
 
-# Filter by job title (partial match — extracts all matching jobs)
+Filter by job title (partial match):
+
+```bash
 python3 main.py extract --job-title "Développeur(euse) React Native"
+```
 
-# List available jobs (to find title keywords)
-python3 main.py list-jobs
+List available jobs (to find title keywords or IDs):
 
-# List available jobs (to find title keywords or IDs)
+```bash
 python3 main.py list-jobs
 ```
 
 ## Web UI
+
+Start the local server:
 
 ```bash
 python3 server.py
