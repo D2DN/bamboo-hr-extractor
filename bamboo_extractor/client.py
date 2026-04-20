@@ -70,6 +70,15 @@ class BambooHRClient:
     def get_application_details(self, application_id: int | str) -> dict:
         return self._get(f"/applicant_tracking/applications/{application_id}")
 
+    def get_application_comments(self, application_id: int | str) -> list[dict]:
+        try:
+            result = self._get(f"/applicant_tracking/applications/{application_id}/comments")
+            if isinstance(result, list):
+                return result
+            return result.get("comments", [])
+        except Exception:
+            return []
+
     def enrich_with_details(self, applications: list[dict]) -> list[dict]:
         """Merge full application details into each application dict."""
         enriched = []
