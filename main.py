@@ -29,7 +29,8 @@ def cli():
 @click.option("--job-title", envvar="BAMBOO_JOB_TITLE", default=None,
               help="Filter by job title (partial match, case-insensitive). Overrides --job-id.")
 @click.option("--demo", is_flag=True, default=False, help="Demo mode: limit to 10 candidates")
-def extract(api_key, domain, status, job_id, new_since, output_format, output_file, resumes_dir, job_title, demo):
+@click.option("--enrich/--no-enrich", default=True, help="Fetch full details for each candidate (slower but more data)")
+def extract(api_key, domain, status, job_id, new_since, output_format, output_file, resumes_dir, job_title, demo, enrich):
     """Extract candidate applications from BambooHR ATS and optionally download CVs."""
     config = Config(
         api_key=api_key or "",
@@ -74,17 +75,20 @@ def extract(api_key, domain, status, job_id, new_since, output_format, output_fi
     else:
         click.echo(f"Retrieved {len(applications)} application(s).")
 
-    click.echo("Fetching full details for each candidate...")
-    with click.progressbar(applications, label="Enriching", show_pos=True) as bar:
-        enriched_applications = []
-        for app in bar:
-            app_id = app.get("id")
-            try:
-                details = client.get_application_details(app_id)
-                enriched_applications.append({**app, **details})
-            except Exception:
-                enriched_applications.append(app)
-    applications = enriched_applications
+    if enrich:
+        click.echo("Fetching full details for each candidate...")
+        with click.progressbar(applications, label="Enriching", show_pos=True) as bar:
+            enriched_applications = []
+            for app in bar:
+                app_id = app.get("id")
+                try:
+                    details = client.get_application_details(app_id)
+                    enriched_applications.append({**app, **details})
+                except Exception:
+                    enriched_applications.append(app)
+        applications = enriched_applications
+    else:
+        click.echo("Skipping enrichment (simple mode).")
 
     # Export d'abord sans les chemins de CV
     path = export(applications, output_format.lower(), output_file)

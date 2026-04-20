@@ -6,7 +6,9 @@ import subprocess
 import sys
 import threading
 
-from flask import Flask, Response, render_template, request, stream_with_context
+import os
+
+from flask import Flask, Response, render_template, request, send_file, stream_with_context
 
 app = Flask(__name__)
 
@@ -20,6 +22,21 @@ def api_stop():
         _current_proc.terminate()
         return {"status": "stopped"}
     return {"status": "no_process"}
+
+
+@app.route("/api/download")
+def api_download():
+    output_file = request.args.get("file", "candidates_export")
+    output_format = request.args.get("format", "csv")
+    ext = "csv" if output_format == "csv" else "json"
+    filename = f"{output_file}.{ext}"
+    if not os.path.isfile(filename):
+        return {"error": f"File not found: {filename}"}, 404
+    return send_file(
+        os.path.abspath(filename),
+        as_attachment=True,
+        download_name=filename,
+    )
 
 
 @app.route("/")
@@ -76,6 +93,8 @@ def api_extract():
     add("--output", data.get("output_file"))
     add("--resumes-dir", data.get("resumes_dir"))
     add_flag("--demo", data.get("demo"))
+    if data.get("enrich") is False:
+        cmd.append("--no-enrich")
 
     def generate():
         global _current_proc

@@ -75,12 +75,18 @@ def download_resumes(
         if not app_id:
             continue
 
-        # Applications are already enriched with details — no extra API call needed.
-        details = app
-
         file_map.setdefault(app_id, {})
 
-        resume_file_id = details.get("resumeFileId") or app.get("resumeFileId")
+        resume_file_id = app.get("resumeFileId")
+        if not resume_file_id:
+            try:
+                details = client.get_application_details(app_id)
+                resume_file_id = details.get("resumeFileId")
+            except Exception:
+                details = {}
+        else:
+            details = app
+
         if not resume_file_id:
             continue
 
@@ -94,7 +100,7 @@ def download_resumes(
         try:
             content, headers = client.download_file(app_id, resume_file_id)
             ext = _ext_from_headers(headers)
-            filename = _build_filename(app, details, "resume", ext)
+            filename = _build_filename(app, details if details else app, "resume", ext)
             dest = output_dir / filename
             dest.write_bytes(content)
             click.echo(f"  [OK]   {filename}")
@@ -103,7 +109,7 @@ def download_resumes(
         except Exception as e:
             msg = str(e)
             click.echo(f"  [ERR]  application {app_id} resume: {msg}")
-            first, last = _get_names(app, details)
+            first, last = _get_names(app, details if details else app)
             stats["errors"] += 1
             error_rows.append({"application_id": app_id, "first_name": first, "last_name": last, "file_type": "resume", "error": msg})
 

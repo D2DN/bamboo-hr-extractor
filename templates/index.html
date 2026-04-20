@@ -217,6 +217,27 @@
     .btn-stop:active { transform: scale(.99); }
     .btn-stop.visible { display: block; }
 
+    .btn-download {
+      width: 100%;
+      padding: 14px;
+      background: #2563eb;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+      letter-spacing: .2px;
+      display: none;
+      margin-top: 12px;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-download:hover { background: #1d4ed8; }
+    .btn-download:active { transform: scale(.99); }
+    .btn-download.visible { display: block; }
+
     /* ── Terminal output ── */
     .terminal {
       background: #0f1117;
@@ -355,8 +376,20 @@
 
       </div>
 
-      <!-- Demo toggle -->
+      <!-- Enrich toggle -->
       <div class="toggle-row" style="margin-top:8px;">
+        <label class="switch">
+          <input type="checkbox" id="enrich" name="enrich" checked />
+          <span class="slider"></span>
+        </label>
+        <div>
+          <div class="toggle-label">Mode enrichi <span style="font-size:.74rem;color:var(--green);font-weight:600;">recommandé</span></div>
+          <div class="toggle-desc">Récupère les détails complets de chaque candidat (1 appel API par candidat)</div>
+        </div>
+      </div>
+
+      <!-- Demo toggle -->
+      <div class="toggle-row">
         <label class="switch">
           <input type="checkbox" id="demo" name="demo" />
           <span class="slider"></span>
@@ -378,6 +411,10 @@
   <button class="btn-stop" id="btn_stop">
     ■ Stopper l'extraction
   </button>
+
+  <a class="btn-download" id="btn_download" href="#" download>
+    ⬇ Télécharger le fichier exporté
+  </a>
 
   <!-- Terminal -->
   <div class="terminal" id="terminal">
@@ -450,6 +487,7 @@
       output_file:   $("output_file").value.trim() || "candidates_export",
       resumes_dir:   $("resumes_dir").value.trim() || null,
       demo:          $("demo").checked,
+      enrich:        $("enrich").checked,
     };
 
     if (!body.api_key || !body.domain) {
@@ -465,6 +503,7 @@
     $("btn_run").disabled = true;
     $("btn_run").textContent = "⏳ Extraction en cours…";
     $("btn_stop").classList.add("visible");
+    $("btn_download").classList.remove("visible");
 
     // Cursor
     const cursor = document.createElement("span");
@@ -518,6 +557,12 @@
       $("btn_run").disabled = false;
       $("btn_run").textContent = "▶ Lancer l'extraction";
       $("btn_stop").classList.remove("visible");
+
+      const dlBtn = $("btn_download");
+      const params = new URLSearchParams({ file: body.output_file, format: body.output_format });
+      dlBtn.href = `/api/download?${params}`;
+      dlBtn.textContent = `⬇ Télécharger ${body.output_file}.${body.output_format}`;
+      dlBtn.classList.add("visible");
     }
   });
 </script>
