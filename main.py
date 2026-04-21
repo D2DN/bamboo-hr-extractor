@@ -30,8 +30,10 @@ def cli():
               help="Filter by job title (partial match, case-insensitive). Overrides --job-id.")
 @click.option("--demo", is_flag=True, default=False, help="Demo mode: limit to 10 candidates")
 @click.option("--enrich/--no-enrich", default=True, help="Fetch full details for each candidate (slower but more data)")
-def extract(api_key, domain, status, job_id, new_since, output_format, output_file, resumes_dir, job_title, demo, enrich):
-    """Extract candidate applications from BambooHR ATS and optionally download CVs."""
+@click.option("--fetch-notes/--no-fetch-notes", default=True, help="Fetch comments/notes for each candidate and include in export")
+@click.option("--fetch-emails/--no-fetch-emails", default=False, help="Try to fetch emails sent to each candidate (experimental endpoint)")
+def extract(api_key, domain, status, job_id, new_since, output_format, output_file, resumes_dir, job_title, demo, enrich, fetch_notes, fetch_emails):
+    """Extract candidate applications from BambooHR ATS. Optionally download CVs and fetch notes/emails."""
     config = Config(
         api_key=api_key or "",
         company_domain=domain or "",
@@ -83,16 +85,41 @@ def extract(api_key, domain, status, job_id, new_since, output_format, output_fi
                 app_id = app.get("id")
                 try:
                     details = client.get_application_details(app_id)
-                    enriched_applications.append({**app, **details})
+                    merged = {**app, **details}
                 except Exception:
-                    enriched_applications.append(app)
+                    merged = app
+                enriched_applications.append(merged)
         applications = enriched_applications
     else:
         click.echo("Skipping enrichment (simple mode).")
 
+    if fetch_notes:
+        click.echo("Fetching notes/comments for each candidate...")
+        with click.progressbar(applications, label="Notes", show_pos=True) as bar:
+            noted_applications = []
+            for app in bar:
+                app_id = app.get("id")
+                comments = client.get_application_comments(app_id)
+                noted_applications.append({**app, "comments": comments})
+        applications = noted_applications
+
+    if fetch_emails:
+        click.echo("Fetching emails for each candidate (experimental)...")
+        with click.progressbar(applications, label="Emails", show_pos=True) as bar:
+            emailed_applications = []
+            for app in bar:
+                app_id = app.get("id")
+                emails = client.get_application_emails(app_id)
+                emailed_applications.append({**app, "emails": emails})
+        applications = emailed_applications
+
     from datetime import datetime
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     suffix = "_enriched" if enrich else ""
+    if fetch_notes:
+        suffix += "_notes"
+    if fetch_emails:
+        suffix += "_emails"
     output_file = f"{output_file}_{ts}{suffix}"
 
     # Export d'abord sans les chemins de CV
@@ -157,6 +184,10 @@ def debug(api_key, domain):
     details = client.get_application_details(app_id)
     click.echo(json.dumps(details, indent=2))
 
+    click.echo(f"\n=== application comments/notes (id={app_id}) ===")
+    comments = client.get_application_comments(app_id)
+    click.echo(json.dumps(comments, indent=2))
+
     resume_file_id = details.get("resumeFileId") or first.get("resumeFileId")
     if resume_file_id:
         click.echo(f"\n=== download attempt (resumeFileId={resume_file_id}) ===")
@@ -171,6 +202,35 @@ def debug(api_key, domain):
         click.echo(f"First 200 bytes: {resp.content[:200]}")
     else:
         click.echo("\nNo resumeFileId found in this application.")
+
+
+@cli.command()
+@click.option("--api-key", envvar="BAMBOO_API_KEY", required=True)
+@click.option("--domain", envvar="BAMBOO_COMPANY_DOMAIN", required=True)
+@click.option("--app-id", default=None, type=int, help="Application ID to test (uses first app if not set)")
+def debug_emails(api_key, domain, app_id):
+    """Test the undocumented /emails endpoint on a candidate application."""
+    import json
+    config = Config(api_key=api_key, company_domain=domain)
+    client = BambooHRClient(config)
+
+    if not app_id:
+        data = client.get_applications(page=1, application_status="ALL")
+        apps = data.get("applications", [])
+        if not apps:
+            click.echo("No applications found.")
+            return
+        app_id = apps[0].get("id")
+        click.echo(f"No --app-id provided, using first application: {app_id}")
+
+    click.echo(f"\n=== GET /applicant_tracking/applications/{app_id}/emails ===")
+    status_code, raw = client.probe_application_emails(app_id)
+    click.echo(f"HTTP Status: {status_code}")
+    if isinstance(raw, list) and raw:
+        click.echo(f"Found {len(raw)} email(s):")
+    else:
+        click.echo("Raw response:")
+    click.echo(json.dumps(raw, indent=2))
 
 
 if __name__ == "__main__":
